@@ -41,6 +41,25 @@ public struct Multicall {
             throw MulticallError.executionFailed(error)
         }
     }
+	
+	public func aggregate(calls: [Call], contract: EthereumAddress) async throws -> MulticallResponse {
+		let function = Contract.Functions.aggregate(contract: contract, calls: calls)
+		
+		do {
+			let data = try await function.call(withClient: client, responseType: Response.self)
+			guard calls.count == data.outputs.count else {
+				fatalError("Outputs do not match the number of calls done")
+			}
+			
+			zip(calls, data.outputs)
+				.forEach { call, output in
+					try? call.handler?(output)
+				}
+			return data
+		} catch {
+			throw MulticallError.executionFailed(error)
+		}
+	}
 
     public func tryAggregate(requireSuccess: Bool, calls: [Call]) async throws -> Multicall.Multicall2Response {
         let function = Contract.Functions.tryAggregate(contract: Contract.multicall2Address, requireSuccess: requireSuccess, calls: calls)
@@ -56,6 +75,21 @@ public struct Multicall {
             throw MulticallError.executionFailed(error)
         }
     }
+	
+	public func tryAggregate(requireSuccess: Bool, calls: [Call], contract: EthereumAddress) async throws -> Multicall.Multicall2Response {
+		let function = Contract.Functions.tryAggregate(contract: contract, requireSuccess: requireSuccess, calls: calls)
+		
+		do {
+			let data = try await function.call(withClient: client, responseType: Multicall2Response.self)
+			zip(calls, data.outputs)
+				.forEach { call, output in
+					try? call.handler?(output)
+				}
+			return data
+		} catch {
+			throw MulticallError.executionFailed(error)
+		}
+	}
 }
 
 extension Multicall {
@@ -80,6 +114,28 @@ extension Multicall {
             }
         }
     }
+	
+	public func aggregate(calls: [Call], contract: EthereumAddress, completionHandler: @escaping (Result<MulticallResponse, MulticallError>) -> Void) {
+		Task {
+			do {
+				let res = try await aggregate(calls: calls, contract: contract)
+				completionHandler(.success(res))
+			} catch let error as MulticallError {
+				completionHandler(.failure(error))
+			}
+		}
+	}
+	
+	public func tryAggregate(requireSuccess: Bool, calls: [Call], contract: EthereumAddress, completionHandler: @escaping (Result<Multicall2Response, MulticallError>) -> Void) {
+		Task {
+			do {
+				let res = try await tryAggregate(requireSuccess: requireSuccess, calls: calls, contract: contract)
+				completionHandler(.success(res))
+			} catch let error as MulticallError {
+				completionHandler(.failure(error))
+			}
+		}
+	}
 }
 
 extension Multicall {

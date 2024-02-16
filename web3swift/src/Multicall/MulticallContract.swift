@@ -9,7 +9,7 @@ import Foundation
 extension Multicall {
     public enum Contract {
         static let goerliAddress: EthereumAddress = "0x77dCa2C955b15e9dE4dbBCf1246B4B85b651e50e"
-        static let mainnetAddress: EthereumAddress = "0xF34D2Cb31175a51B23fb6e08cA06d7208FaD379F"
+        static let mainnetAddress: EthereumAddress = "0xeefba1e63905ef1d7acba5a8513c70307c1ce441"
         static let multicall2Address: EthereumAddress = "0x5ba1e12693dc8f9c48aad8770482f4739beed696"
 
         public static func registryAddress(for network: EthereumNetwork) -> EthereumAddress? {
